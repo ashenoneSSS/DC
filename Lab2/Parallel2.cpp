@@ -241,18 +241,21 @@ int main(int argc, char** argv) {
     // если квадрат процессов — запускаем Fox; иначе — строчный вариант
     int g = (int)(sqrt((double)ProcNum) + 0.5);
     if (g * g == ProcNum) {
-        GridSize = g;
-        // проверим делимость N на GridSize (чтобы блоки были целые)
-        if (N % GridSize != 0) {
-            if (ProcRank == 0) printf("Size must be divisible by sqrt(np)=%d\n", GridSize);
-            MPI_Finalize(); return 0;
-        }
+    GridSize = g;
+
+    // если N не делится на GridSize, просто переходим в RowStriped
+    if (N % GridSize != 0) {
+        if (ProcRank == 0)
+            printf("Matrix size %d not divisible by sqrt(np)=%d → using row-striped version\n", N, GridSize);
+        RunRowStriped(N);
+    } else {
         CreateGridCommunicators();
         RunSquareGrid(N);
+    }
     } else {
-        // работает на любом np (1,2,4,8,…), делимость не требуется
         RunRowStriped(N);
     }
+
 
     MPI_Finalize();
     return 0;
